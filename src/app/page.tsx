@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import DropDown from "@/components/dropDown";
+import { translateText } from "./../actions/translate-actions";
 import Navbar from "@/components/navbar";
+import { transcribeAudio } from "./../actions/translate-actions";
+import VoiceRecorder, { type RecordedAudio } from "@/components/voice-recorder";
 
 /*
   Palette (from the PhotoFeed screenshot)
@@ -28,6 +31,8 @@ export default function Home() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const [transcribing, setTranscribing] = useState(false);
 
   // If the user picks the language that's already on the other side, swap them
   const handleLanguageFromChange = (value: string) => {
@@ -54,13 +59,37 @@ export default function Home() {
     if (!text.trim() || loading) return;
     setLoading(true);
     setResult("");
+    setError("");
     try {
-      // TODO: replace with your real translation call, e.g.
-      // const res = await fetch("/api/translate", { method: "POST", body: JSON.stringify({ text, from: languageFrom, to: languageTo }) });
-      await new Promise((r) => setTimeout(r, 800));
-      setResult(`(${languageTo}) ${text}`);
+      const res = await translateText(text, languageFrom, languageTo);
+      if ("error" in res) setError(res.error);
+      else setResult(res.translation);
+      console.log(result);
+    } catch {
+      setError("Something went wrong. Check your connection and try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRecordingComplete = async ({
+    base64,
+    mimeType,
+  }: RecordedAudio) => {
+    setTranscribing(true);
+    setError("");
+    try {
+      const res = await transcribeAudio(base64, mimeType);
+      if ("error" in res) return setError(res.error);
+      setText((prev) =>
+        (prev ? `${prev} ${res.transcript}` : res.transcript).slice(
+          0,
+          MAX_CHARS,
+        ),
+      );
+      setResult(""); // the old translation no longer matches the text
+    } finally {
+      setTranscribing(false);
     }
   };
 
@@ -103,13 +132,18 @@ export default function Home() {
                 />
               </div>
               <textarea
+                readOnly={transcribing}
+                placeholder={
+                  transcribing
+                    ? "Transcribing your recording…"
+                    : "Enter text to translate"
+                }
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter")
                     handleTranslate();
                 }}
-                placeholder="Enter text to translate"
                 aria-label="Text to translate"
                 className={textareaBase}
               />
@@ -193,17 +227,36 @@ export default function Home() {
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={handleTranslate}
-              disabled={!text.trim() || loading}
-              className="rounded-xl bg-[#FFB86B] px-10 py-3 text-lg font-bold text-[#4A2208] transition-colors hover:bg-[#FFC88A] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFB86B] disabled:cursor-not-allowed disabled:bg-[#FFB86B]/30 disabled:text-[#FFB86B]/60"
-            >
-              {loading ? "Translating…" : "Translate"}
-            </button>
-            <p className="text-sm text-[#FFB86B]/60">
-              Press Ctrl + Enter to translate
-            </p>
+            {/* <div className="flex items-center gap-12"> */}
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+              <button
+                type="button"
+                onClick={handleTranslate}
+                disabled={!text.trim() || loading || transcribing}
+                className="rounded-xl bg-[#FFB86B] px-10 py-3 text-lg font-bold text-[#4A2208] transition-colors hover:bg-[#FFC88A] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFB86B] disabled:cursor-not-allowed disabled:bg-[#FFB86B]/30 disabled:text-[#FFB86B]/60"
+              >
+                {loading ? "Translating…" : "Translate"}
+              </button>
+              {/* {languageFrom === "en" && <VoiceRecorder />} */}
+              <VoiceRecorder
+                disabled={languageFrom !== "en" || transcribing}
+                onRecordingComplete={handleRecordingComplete}
+              />{" "}
+            </div>
+            <span className="text-sm tabular-nums text-[#FFB86B]/60">
+              {transcribing
+                ? "Transcribing…"
+                : `${text.length.toLocaleString()} / ${MAX_CHARS.toLocaleString()}`}
+            </span>
+            {error ? (
+              <p role="alert" className="text-sm font-medium text-[#FFD4A3]">
+                {error}
+              </p>
+            ) : (
+              <p className="text-sm text-[#FFB86B]/60">
+                Press Ctrl + Enter to translate
+              </p>
+            )}
           </div>
         </div>
       </main>
