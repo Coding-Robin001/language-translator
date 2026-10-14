@@ -17,6 +17,7 @@ model User {
   updatedAt     DateTime
   accounts      Account[]
   sessions      Session[]
+  translations  Translation[]
 
   @@map("user")
 }
@@ -63,5 +64,38 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("Verification")
+}
+
+
+// Values match your dropdown codes, so no mapping layer is needed.
+// Adding a language later = add a line here + run a migration.
+enum Language {
+  en
+  fr
+  es
+}
+
+enum InputMethod {
+  text
+  voice
+}
+
+
+model Translation {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  languageFrom   Language
+  languageTo     Language
+  sourceText     String
+  translatedText String
+  inputMethod    InputMethod @default(text) // optional: delete if you don't want it
+
+  createdAt      DateTime    @default(now())
+
+  // Fast "my history, newest first" queries
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("translation")
 }
 

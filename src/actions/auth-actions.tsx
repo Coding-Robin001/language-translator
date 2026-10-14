@@ -3,6 +3,8 @@
 import { headers } from "next/headers";
 import { auth } from "../lib/auth";
 import { redirect } from "next/navigation";
+import { safeRedirectPath } from "@/lib/safeRedirect";
+
 
 type AuthError = {
   statusCode?: number;
@@ -90,21 +92,13 @@ export const signIn = async (email: string, password: string) => {
   }
 };
 
-export const signInSocial = async (provider: "google" | "github") => {
+
+export const signInSocial = async (provider: "google" | "github", callbackURL?: string) => {
   const { url } = await auth.api.signInSocial({
-    body: {
-      provider,
-      callbackURL: "/auth-dashboard",
-    },
+    body: { provider, callbackURL: safeRedirectPath(callbackURL) },
   });
-
-  if (!url) {
-    throw new Error("No OAuth URL returned");
-  }
-
   if (url) redirect(url);
 };
-
 export const signOut = async () => {
   try {
     const result = await auth.api.signOut({ headers: await headers() });

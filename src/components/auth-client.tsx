@@ -3,6 +3,12 @@
 import { signIn, signInSocial, signUp } from "../actions/auth-actions";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { safeRedirectPath } from "@/lib/safeRedirect";
+
+// Where to go after signing in: the ?next= value if it's a safe same-site path,
+// otherwise /auth-dashboard. Read inside handlers only, so no <Suspense> is needed.
+const getNext = () =>
+  safeRedirectPath(new URLSearchParams(window.location.search).get("next"));
 
 const AuthClientPage = () => {
   const [isSignIn, setIsSignIn] = useState(true);
@@ -62,7 +68,12 @@ const AuthClientPage = () => {
         const result = await signIn(email, password);
         if (!result.user) {
           setErrors({ general: "Invalid email or password!" });
+          return;
         }
+        // signed in: go back to where the user came from, then refresh so
+        // server components pick up the new session
+        router.push(getNext());
+        router.refresh();
       } else {
         const result = await signUp(email, password, name);
 
@@ -91,7 +102,9 @@ const AuthClientPage = () => {
 
     console.log("logged in with:", provider);
 
-    await signInSocial(provider);
+    // the destination goes through the server action because the browser
+    // leaves the site for Google/GitHub and comes back afterwards
+    await signInSocial(provider, getNext());
   };
 
   return (
