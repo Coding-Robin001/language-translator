@@ -1,21 +1,16 @@
-import Link from "next/link";
-import React from "react";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import NavbarLinks from "@/components/navbarLinks";
 
-const Navbar = () => {
-  return (
-    <nav className="flex justify-center gap-10 py-5 text-lg font-bold text-[#5C2A0A]">
-      <Link href="/" className="hover:underline">
-        Home
-      </Link>
-      <Link
-        href="/"
-        aria-current="page"
-        className="underline underline-offset-4"
-      >
-        Translate
-      </Link>
-    </nav>
-  );
-};
+// Server component: finds out whether the user is signed in, so pages just render <Navbar />
+export default async function Navbar() {
+  let signedIn = false;
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    signedIn = !!session;
+  } catch {
+    // treat any auth lookup failure as signed out
+  }
 
-export default Navbar;
+  return <NavbarLinks signedIn={signedIn} />;
+}

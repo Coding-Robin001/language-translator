@@ -3,7 +3,7 @@ import "./globals.css";
 import { fraunces, inter } from "@/lib/fonts";
 // import NavbarWrapper from "@/components/navbarWrapper";
 import NextTopLoader from "nextjs-toploader";
-// import Footer from "@/components/footer";
+import Navbar from "@/components/navbar";
 
 export const metadata: Metadata = {
   title: "Translator",
@@ -14,10 +14,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body>
-        {/* <NavbarWrapper /> */}
         <NextTopLoader />
+        <Navbar/>
         <main>{children}</main>
-        {/* <Footer /> */}
       </body>
     </html>
   );
