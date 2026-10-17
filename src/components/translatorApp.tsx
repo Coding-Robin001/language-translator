@@ -7,6 +7,7 @@ import { Bookmark, Check, Loader2 } from "lucide-react";
 import DropDown from "@/components/dropDown";
 import VoiceRecorder, { type RecordedAudio } from "@/components/voice-recorder";
 import { loadDraft, saveDraft, clearDraft, type Draft } from "@/lib/translateDraft";
+import { languageOptions } from "@/lib/languages";
 import {
   translateText,
   transcribeAudio,
@@ -21,12 +22,6 @@ import {
   rust    #B85C1E  borders
   ink     #5C2A0A  text on peach
 */
-
-const languageOptions = [
-  { value: "en", label: "English" },
-  { value: "fr", label: "French" },
-  { value: "es", label: "Spanish" },
-];
 
 const MAX_CHARS = 5000;
 
@@ -264,6 +259,7 @@ function Translator({ initial }: { initial: Draft | null }) {
                     handleTranslate();
                 }}
                 aria-label="Text to translate"
+                dir="auto"
                 className={textareaBase}
               />
               <div className="flex items-center justify-between px-4 pb-3 pt-2">
@@ -322,6 +318,7 @@ function Translator({ initial }: { initial: Draft | null }) {
               </div>
               <div
                 aria-live="polite"
+                dir="auto"
                 className="min-h-[260px] flex-1 px-5 pt-4 text-xl leading-relaxed"
               >
                 {loading ? (

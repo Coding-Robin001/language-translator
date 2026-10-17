@@ -86,8 +86,10 @@ model Translation {
   userId         String
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  languageFrom   Language
-  languageTo     Language
+  // Language codes such as "en" or "yo". Valid values are defined in lib/languages.ts,
+  // so adding a language never needs a database migration.
+  languageFrom   String
+  languageTo     String
   sourceText     String
   translatedText String
   inputMethod    InputMethod @default(text) // optional: delete if you don't want it
@@ -98,4 +100,5 @@ model Translation {
   @@index([userId, createdAt(sort: Desc)])
   @@map("translation")
 }
+
 

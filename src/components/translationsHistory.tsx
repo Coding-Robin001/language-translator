@@ -135,13 +135,13 @@ export default function TranslationHistory({ initialItems, initialCursor }: Prop
                   className="order-1 justify-self-start md:order-none"
                 />
 
-                <span className="order-3 col-span-2 truncate text-white md:order-none md:col-span-1">
+                <span dir="auto" className="order-3 col-span-2 truncate text-white md:order-none md:col-span-1">
                   {item.sourceText}
                 </span>
 
                 <span className="order-4 col-span-2 flex min-w-0 items-center gap-2 text-[#FFB86B] md:order-none md:col-span-1">
                   <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 md:hidden" />
-                  <span className="truncate">{item.translatedText}</span>
+                  <span dir="auto" className="truncate">{item.translatedText}</span>
                 </span>
 
                 <span className="order-2 flex items-center justify-end gap-2 text-xs text-[#FFB86B]/70 md:order-none">
@@ -166,7 +166,7 @@ export default function TranslationHistory({ initialItems, initialCursor }: Prop
                       <LanguageFlag code={item.languageFrom} />
                       {languageLabel(item.languageFrom)}
                     </p>
-                    <p className="whitespace-pre-wrap break-words text-lg leading-relaxed text-white">
+                    <p dir="auto" className="whitespace-pre-wrap break-words text-lg leading-relaxed text-white">
                       {item.sourceText}
                     </p>
                   </div>
@@ -175,7 +175,7 @@ export default function TranslationHistory({ initialItems, initialCursor }: Prop
                       <LanguageFlag code={item.languageTo} />
                       {languageLabel(item.languageTo)}
                     </p>
-                    <p className="whitespace-pre-wrap break-words text-lg leading-relaxed text-[#FFC88A]">
+                    <p dir="auto" className="whitespace-pre-wrap break-words text-lg leading-relaxed text-[#FFC88A]">
                       {item.translatedText}
                     </p>
                   </div>
