@@ -3,15 +3,18 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Check, Loader2 } from "lucide-react";
+import { Bookmark, Check, Lightbulb, Loader2 } from "lucide-react";
 import DropDown from "@/components/dropDown";
 import VoiceRecorder, { type RecordedAudio } from "@/components/voice-recorder";
 import { loadDraft, saveDraft, clearDraft, type Draft } from "@/lib/translateDraft";
 import { languageOptions } from "@/lib/languages";
+import ExplainDialog from "@/components/explainDialog";
 import {
   translateText,
   transcribeAudio,
   saveTranslation,
+  explainTranslation,
+  type ExplainSuccess,
 } from "@/actions/translate-actions";
 
 /*
@@ -41,6 +44,14 @@ function Translator({ initial }: { initial: Draft | null }) {
   const [result, setResult] = useState(initial?.result ?? "");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Explain pop-up
+  const [explainOpen, setExplainOpen] = useState(false);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explainError, setExplainError] = useState("");
+  const [explainData, setExplainData] = useState<ExplainSuccess | null>(null);
+  // Remembers explanations already fetched, so reopening one costs no extra request
+  const explainCache = useRef(new Map<string, ExplainSuccess>());
   const [error, setError] = useState("");
   const [transcribing, setTranscribing] = useState(false);
 
@@ -149,6 +160,41 @@ function Translator({ initial }: { initial: Draft | null }) {
       setResult(""); // the old translation no longer matches the text
     } finally {
       setTranscribing(false);
+    }
+  };
+
+  const handleExplain = async () => {
+    if (!result || !translated) return;
+    setExplainOpen(true);
+
+    const key = `${translated.from}|${translated.to}|${translated.source}|${result}`;
+    const cached = explainCache.current.get(key);
+    if (cached) {
+      setExplainData(cached);
+      setExplainError("");
+      return;
+    }
+
+    setExplainData(null);
+    setExplainError("");
+    setExplainLoading(true);
+    try {
+      const res = await explainTranslation(
+        translated.source,
+        result,
+        translated.from,
+        translated.to,
+      );
+      if ("error" in res) {
+        setExplainError(res.error);
+      } else {
+        explainCache.current.set(key, res);
+        setExplainData(res);
+      }
+    } catch {
+      setExplainError("Something went wrong. Check your connection and try again.");
+    } finally {
+      setExplainLoading(false);
     }
   };
 
@@ -331,12 +377,21 @@ function Translator({ initial }: { initial: Draft | null }) {
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-end px-4 pb-3 pt-2">
+              <div className="flex items-center justify-end gap-1 px-4 pb-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleExplain}
+                  disabled={!result || !translated}
+                  className={`${ghostButton} cursor-pointer  inline-flex items-center gap-1.5`}
+                >
+                  <Lightbulb aria-hidden="true" className="h-4 w-4" />
+                  Explain
+                </button>
                 <button
                   type="button"
                   onClick={handleCopy}
                   disabled={!result}
-                  className={ghostButton}
+                  className={`${ghostButton} cursor-pointer`}
                 >
                   {copied ? "Copied" : "Copy"}
                 </button>
@@ -371,6 +426,17 @@ function Translator({ initial }: { initial: Draft | null }) {
           </div>
         </div>
       </main>
+
+      <ExplainDialog
+        open={explainOpen}
+        onClose={() => setExplainOpen(false)}
+        loading={explainLoading}
+        error={explainError}
+        data={explainData}
+        from={translated?.from ?? languageFrom}
+        to={translated?.to ?? languageTo}
+        onRetry={handleExplain}
+      />
     </div>
   );
 }
