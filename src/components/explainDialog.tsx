@@ -5,7 +5,7 @@ import { ArrowRight, Lightbulb, X } from "lucide-react";
 import LanguageFlag, { languageLabel } from "@/components/languageFlag";
 import type { ExplainSuccess } from "@/actions/translate-actions";
 
-type Props = {
+export type ExplainDialogProps = {
   open: boolean;
   onClose: () => void;
   loading: boolean;
@@ -53,7 +53,7 @@ export default function ExplainDialog({
   from,
   to,
   onRetry,
-}: Props) {
+}: ExplainDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   // The native <dialog> gives us focus trapping, Esc to close and a backdrop for free.

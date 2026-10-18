@@ -9,12 +9,11 @@ import VoiceRecorder, { type RecordedAudio } from "@/components/voice-recorder";
 import { loadDraft, saveDraft, clearDraft, type Draft } from "@/lib/translateDraft";
 import { languageOptions } from "@/lib/languages";
 import ExplainDialog from "@/components/explainDialog";
+import { useExplain } from "@/hooks/useExplain";
 import {
   translateText,
   transcribeAudio,
   saveTranslation,
-  explainTranslation,
-  type ExplainSuccess,
 } from "@/actions/translate-actions";
 
 /*
@@ -45,13 +44,8 @@ function Translator({ initial }: { initial: Draft | null }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Explain pop-up
-  const [explainOpen, setExplainOpen] = useState(false);
-  const [explainLoading, setExplainLoading] = useState(false);
-  const [explainError, setExplainError] = useState("");
-  const [explainData, setExplainData] = useState<ExplainSuccess | null>(null);
-  // Remembers explanations already fetched, so reopening one costs no extra request
-  const explainCache = useRef(new Map<string, ExplainSuccess>());
+  // Explain pop-up: the request, caching and dialog state all live in the hook
+  const { explain, dialogProps } = useExplain();
   const [error, setError] = useState("");
   const [transcribing, setTranscribing] = useState(false);
 
@@ -163,39 +157,14 @@ function Translator({ initial }: { initial: Draft | null }) {
     }
   };
 
-  const handleExplain = async () => {
+  const handleExplain = () => {
     if (!result || !translated) return;
-    setExplainOpen(true);
-
-    const key = `${translated.from}|${translated.to}|${translated.source}|${result}`;
-    const cached = explainCache.current.get(key);
-    if (cached) {
-      setExplainData(cached);
-      setExplainError("");
-      return;
-    }
-
-    setExplainData(null);
-    setExplainError("");
-    setExplainLoading(true);
-    try {
-      const res = await explainTranslation(
-        translated.source,
-        result,
-        translated.from,
-        translated.to,
-      );
-      if ("error" in res) {
-        setExplainError(res.error);
-      } else {
-        explainCache.current.set(key, res);
-        setExplainData(res);
-      }
-    } catch {
-      setExplainError("Something went wrong. Check your connection and try again.");
-    } finally {
-      setExplainLoading(false);
-    }
+    explain({
+      source: translated.source,
+      translated: result,
+      from: translated.from,
+      to: translated.to,
+    });
   };
 
   const handleCopy = async () => {
@@ -382,7 +351,7 @@ function Translator({ initial }: { initial: Draft | null }) {
                   type="button"
                   onClick={handleExplain}
                   disabled={!result || !translated}
-                  className={`${ghostButton} cursor-pointer  inline-flex items-center gap-1.5`}
+                  className={`${ghostButton} inline-flex items-center gap-1.5`}
                 >
                   <Lightbulb aria-hidden="true" className="h-4 w-4" />
                   Explain
@@ -391,7 +360,7 @@ function Translator({ initial }: { initial: Draft | null }) {
                   type="button"
                   onClick={handleCopy}
                   disabled={!result}
-                  className={`${ghostButton} cursor-pointer`}
+                  className={ghostButton}
                 >
                   {copied ? "Copied" : "Copy"}
                 </button>
@@ -427,16 +396,7 @@ function Translator({ initial }: { initial: Draft | null }) {
         </div>
       </main>
 
-      <ExplainDialog
-        open={explainOpen}
-        onClose={() => setExplainOpen(false)}
-        loading={explainLoading}
-        error={explainError}
-        data={explainData}
-        from={translated?.from ?? languageFrom}
-        to={translated?.to ?? languageTo}
-        onRetry={handleExplain}
-      />
+      <ExplainDialog {...dialogProps} />
     </div>
   );
 }

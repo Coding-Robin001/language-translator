@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ChevronDown, Copy, Languages, Loader2 } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Copy, Languages, Lightbulb, Loader2 } from "lucide-react";
 import LanguageFlag, { languageLabel } from "@/components/languageFlag";
 import { getTranslations, type HistoryItem } from "@/actions/history-actions";
+import ExplainDialog from "@/components/explainDialog";
+import { useExplain } from "@/hooks/useExplain";
 
 // Shared by the column header and every row so the columns line up
 const COLS = "md:grid-cols-[152px_minmax(0,1fr)_minmax(0,1fr)_120px]";
@@ -19,6 +21,10 @@ const fullDate = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
   timeStyle: "short",
 });
+
+// Shared look for the small action buttons in an expanded row
+const actionButton =
+  "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-[#FFB86B] transition-colors hover:bg-[#FFB86B]/10 focus-visible:outline-2 focus-visible:outline-[#FFB86B]";
 
 type Props = {
   initialItems: HistoryItem[];
@@ -41,6 +47,7 @@ function LanguagePair({ from, to, className = "" }: { from: string; to: string; 
 
 export default function TranslationHistory({ initialItems, initialCursor }: Props) {
   const router = useRouter();
+  const { explain, dialogProps } = useExplain();
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -183,23 +190,40 @@ export default function TranslationHistory({ initialItems, initialCursor }: Prop
                     <time className="text-xs text-[#FFB86B]/60">
                       {fullDate.format(new Date(item.createdAt))}
                     </time>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(item)}
-                      className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-[#FFB86B] transition-colors hover:bg-[#FFB86B]/10 focus-visible:outline-2 focus-visible:outline-[#FFB86B]"
-                    >
-                      {copiedId === item.id ? (
-                        <>
-                          <Check aria-hidden="true" className="h-4 w-4" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy aria-hidden="true" className="h-4 w-4" />
-                          Copy translation
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          explain({
+                            source: item.sourceText,
+                            translated: item.translatedText,
+                            from: item.languageFrom,
+                            to: item.languageTo,
+                          })
+                        }
+                        className={actionButton}
+                      >
+                        <Lightbulb aria-hidden="true" className="h-4 w-4" />
+                        Explain
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(item)}
+                        className={actionButton}
+                      >
+                        {copiedId === item.id ? (
+                          <>
+                            <Check aria-hidden="true" className="h-4 w-4" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy aria-hidden="true" className="h-4 w-4" />
+                            Copy translation
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -238,6 +262,8 @@ export default function TranslationHistory({ initialItems, initialCursor }: Prop
           </p>
         )}
       </div>
+
+      <ExplainDialog {...dialogProps} />
     </div>
   );
 }
